@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { WinstonModule } from 'nest-winston';
+import { winstonOptions } from './logger/logger.config';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { SettingsModule } from './modules/settings/settings.module';
@@ -13,6 +15,7 @@ import { EmployeeModule } from './modules/employee/employee.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    WinstonModule.forRoot(winstonOptions),
     PrismaModule,
     AuthModule,
     EmployeeModule,
