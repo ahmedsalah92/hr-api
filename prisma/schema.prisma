@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id                String             @id @default(uuid())
+  firstName         String
+  lastName          String
+  email             String             @unique
+  hireDate          DateTime
+  managerId         String?
+  manager           Employee?          @relation("EmployeeManager", fields: [managerId], references: [id])
+  subordinates      Employee[]         @relation("EmployeeManager")
+  missions          MissionRequest[]
+  leaves            LeaveRequest[]
+  attendanceRecords AttendanceRecord[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model MissionRequest {
+  id               String   @id @default(uuid())
+  employee         Employee @relation(fields: [employeeId], references: [id])
+  employeeId       String
+  status           String
+  locationTracking Boolean  @default(false)
+  requestedAt      DateTime @default(now())
+}
+
+model LeaveRequest {
+  id         String   @id @default(uuid())
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  employeeId String
+  type       String
+  startDate  DateTime
+  endDate    DateTime
+  status     String
+  createdAt  DateTime @default(now())
+}
+
+model AttendanceRecord {
+  id         String    @id @default(uuid())
+  employee   Employee  @relation(fields: [employeeId], references: [id])
+  employeeId String
+  checkIn    DateTime
+  checkOut   DateTime?
+}
+
+model Settings {
+  id    String @id @default(uuid())
+  key   String @unique
+  value String
+}
