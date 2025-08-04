@@ -7,23 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums
-
-/// Roles for access control
 enum Role {
-  ADMIN
-  MANAGER
   EMPLOYEE
+  MANAGER
+  ADMIN
 }
 
-/// Status for mission and leave requests
-enum RequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-/// Types of leave tracked by the system
 enum LeaveType {
   ANNUAL
   SICK
@@ -31,115 +20,132 @@ enum LeaveType {
   WORK_FROM_HOME
 }
 
-// Models
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
 
-/// Represents an employee in the organization
+model User {
+  id            String         @id @default(uuid())
+  username      String         @unique
+  passwordHash  String
+  role          Role
+  employeeId    String         @unique
+  employee      Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Employee {
   id        String   @id @default(uuid())
   firstName String
   lastName  String
   email     String   @unique
-  password  String
   hireDate  DateTime
 
-  /// Hierarchy: Manager relationship
+  // Self-referencing manager relation
   managerId    String?
-  manager      Employee?  @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
-  subordinates Employee[] @relation("EmployeeManager")
+  manager      Employee?  @relation("ManagerToEmployee", fields: [managerId], references: [id])
+  subordinates Employee[] @relation("ManagerToEmployee")
 
-  role Role @default(EMPLOYEE)
+  // Requests submitted by this employee
+  missionRequests  MissionRequest[]
+  leaveRequests    LeaveRequest[]
+  attendances      Attendance[]
+  officeExits      OfficeExit[]
+  workFromHomeDays WorkFromHome[]
 
-  /// Balances 
-  annualLeaveBalance Int @default(0)
-  wfhDaysBalance     Int @default(0)
+  // Requests approved by this employee (manager or admin)
+  approvedMissions MissionRequest[] @relation("ApprovedMissions")
+  approvedLeaves   LeaveRequest[]   @relation("ApprovedLeaves")
+  approvedWFH      WorkFromHome[]   @relation("ApprovedWFH")
 
-  /// Relations to requests and records
-  missionRequests  MissionRequest[] @relation("EmployeeMissionRequests")
-  leaveRequests    LeaveRequest[]   @relation("EmployeeLeaveRequests")
-  /// Employees who have approved requests
-  approvedMissions MissionRequest[] @relation("MissionsApprovedBy")
-  approvedLeaves   LeaveRequest[]   @relation("LeavesApprovedBy")
-
-  /// Attendance records
-  attendanceRecords AttendanceRecord[] @relation("EmployeeAttendanceRecords")
-  /// Refresh tokens for session management
-  refreshTokens     RefreshToken[]     @relation("EmployeeRefreshTokens")
+  // Relation to auth system
+  user User?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@index([managerId])
 }
 
-/// Tracks mission requests where employees visit clients
 model MissionRequest {
-  id            String        @id @default(uuid())
-  employeeId    String
-  employee      Employee      @relation("EmployeeMissionRequests", fields: [employeeId], references: [id], onDelete: Cascade)
-  clientName    String
-  startTime     DateTime
-  endTime       DateTime?
-  status        RequestStatus @default(PENDING)
-  trackLocation Boolean       @default(false)
-
-  approvedById String?
-  approvedBy   Employee? @relation("MissionsApprovedBy", fields: [approvedById], references: [id])
-  approvedAt   DateTime?
-  comments     String?
+  id                      String        @id @default(uuid())
+  employee                Employee      @relation(fields: [employeeId], references: [id])
+  employeeId              String
+  status                  RequestStatus
+  locationTrackingEnabled Boolean       @default(false)
+  approvedBy              Employee?     @relation("ApprovedMissions", fields: [approvedById], references: [id])
+  approvedById            String?
+  startDate               DateTime
+  endDate                 DateTime
+  reason                  String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@index([employeeId])
-  @@index([approvedById])
 }
 
-/// Tracks all types of leave requests
 model LeaveRequest {
-  id         String        @id @default(uuid())
-  employeeId String
-  employee   Employee      @relation("EmployeeLeaveRequests", fields: [employeeId], references: [id], onDelete: Cascade)
-  type       LeaveType
-  startDate  DateTime
-  endDate    DateTime
-  status     RequestStatus @default(PENDING)
-
+  id           String        @id @default(uuid())
+  employee     Employee      @relation(fields: [employeeId], references: [id])
+  employeeId   String
+  type         LeaveType
+  status       RequestStatus
+  approvedBy   Employee?     @relation("ApprovedLeaves", fields: [approvedById], references: [id])
   approvedById String?
-  approvedBy   Employee? @relation("LeavesApprovedBy", fields: [approvedById], references: [id])
-  approvedAt   DateTime?
-  comments     String?
+  startDate    DateTime
+  endDate      DateTime
+  reason       String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@index([employeeId])
-  @@index([approvedById])
 }
 
-/// Records daily check-in and check-out times
-model AttendanceRecord {
+model WorkFromHome {
+  id           String    @id @default(uuid())
+  employee     Employee  @relation(fields: [employeeId], references: [id])
+  employeeId   String
+  date         DateTime
+  approvedBy   Employee? @relation("ApprovedWFH", fields: [approvedById], references: [id])
+  approvedById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Attendance {
   id         String    @id @default(uuid())
+  employee   Employee  @relation(fields: [employeeId], references: [id])
   employeeId String
-  employee   Employee  @relation("EmployeeAttendanceRecords", fields: [employeeId], references: [id], onDelete: Cascade)
+  date       DateTime
   checkIn    DateTime
   checkOut   DateTime?
 
-  @@index([employeeId])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-/// Stores refresh tokens for session management
-model RefreshToken {
-  id         Int      @id @default(autoincrement())
-  token      String   @unique
+model OfficeExit {
+  id         String   @id @default(uuid())
+  employee   Employee @relation(fields: [employeeId], references: [id])
   employeeId String
-  employee   Employee @relation("EmployeeRefreshTokens", fields: [employeeId], references: [id], onDelete: Cascade)
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
+  reason     String
+  exitTime   DateTime
 
-  @@index([employeeId])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-/// Key-value store for system-wide settings and policies
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
 model Settings {
   id        String   @id @default(uuid())
   key       String   @unique
