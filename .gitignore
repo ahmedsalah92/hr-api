@@ -12,6 +12,11 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# Prisma client & migrations output (keep your handwritten migrations in
+# version control, but ignore the generated client)
+prisma/generated/
+node_modules/.prisma/
+
 # OS
 .DS_Store
 
