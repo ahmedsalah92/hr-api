@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,4 +5,87 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+
+enum Role {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum ResetReason {
+  RESET
+  INVITE
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  role           Role     @default(EMPLOYEE)
+  mfaEnabled     Boolean  @default(false)
+  mfaSecretEnc   String?  // AES-256-GCM payload when enabled
+  status         String   @default("ACTIVE") // ACTIVE|LOCKED|INVITED|SUSPENDED
+  failedLogins   Int      @default(0)
+  lockedUntil    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  employee       Employee?
+  refreshTokens  RefreshToken[]
+  resetTokens    PasswordResetToken[]
+  recoveryCodes  MfaRecoveryCode[]
+}
+
+model Employee {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  // add org fields later (departmentId, managerId, ...)
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hashedToken String
+  family     String
+  jti        String   @unique
+  ip         String?
+  userAgent  String?
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, family])
+  @@index([expiresAt])
+  @@index([userId, revokedAt])
+}
+
+model PasswordResetToken {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hashedToken String
+  reason      ResetReason
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime    @default(now())
+
+  @@index([userId, expiresAt])
+}
+
+model MfaRecoveryCode {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, usedAt])
 }
