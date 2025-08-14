@@ -8,11 +8,12 @@ import type { RequestUser } from '../types/request-user.type';
 type Role = 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
 
 @Injectable()
+// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(cfg: ConfigService) {
     const jwtFromRequest: JwtFromRequestFunction =
       ExtractJwt.fromAuthHeaderAsBearerToken();
-
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     super({
       jwtFromRequest,
       secretOrKey: cfg.getOrThrow<string>('JWT_ACCESS_SECRET', { infer: true }),
