@@ -33,10 +33,18 @@ export default tseslint.config(
     },
   },
   {
+    files: ['src/domain/**/*.ts', 'src/application/**/*.ts'],
+
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: ['@nestjs/*', 'src/presentation/*', 'src/infrastructure/*'],
+        },
+      ],
     },
   },
 );
