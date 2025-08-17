@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 enum Role {
   ADMIN
   MANAGER
@@ -20,50 +19,53 @@ enum ResetReason {
 }
 
 model User {
-  id             String   @id @default(cuid())
-  email          String   @unique
-  passwordHash   String
-  firstName      String
-  lastName       String
-  role           Role     @default(EMPLOYEE)
-  mfaEnabled     Boolean  @default(false)
-  mfaSecretEnc   String?  // AES-256-GCM payload when enabled
-  status         String   @default("ACTIVE") // ACTIVE|LOCKED|INVITED|SUSPENDED
-  failedLogins   Int      @default(0)
-  lockedUntil    DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  deletedAt      DateTime?
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         Role      @default(EMPLOYEE)
+  mfaEnabled   Boolean   @default(false)
+  mfaSecretEnc String? // AES-256-GCM payload when enabled
+  status       String    @default("ACTIVE") // ACTIVE|LOCKED|INVITED|SUSPENDED
+  failedLogins Int       @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
 
-  employee       Employee?
-  refreshTokens  RefreshToken[]
-  resetTokens    PasswordResetToken[]
-  recoveryCodes  MfaRecoveryCode[]
+  employee      Employee?
+  refreshTokens RefreshToken[]
+  resetTokens   PasswordResetToken[]
+  recoveryCodes MfaRecoveryCode[]
 }
 
 model Employee {
-  id        String  @id @default(cuid())
-  userId    String  @unique
-  user      User    @relation(fields: [userId], references: [id], onDelete: Restrict)
-  // add org fields later (departmentId, managerId, ...)
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  user         User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  displayName  String  @default("")
+  departmentId String?
+  managerId    String?
 }
 
 model RefreshToken {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   hashedToken String
-  family     String
-  jti        String   @unique
-  ip         String?
-  userAgent  String?
-  expiresAt  DateTime
-  revokedAt  DateTime?
-  createdAt  DateTime @default(now())
+  family      String
+  jti         String    @unique
+  ip          String?
+  userAgent   String?
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
 
   @@index([userId, family])
   @@index([expiresAt])
   @@index([userId, revokedAt])
+  @@index([hashedToken])
 }
 
 model PasswordResetToken {
@@ -80,12 +82,12 @@ model PasswordResetToken {
 }
 
 model MfaRecoveryCode {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   codeHash  String
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId, usedAt])
 }
