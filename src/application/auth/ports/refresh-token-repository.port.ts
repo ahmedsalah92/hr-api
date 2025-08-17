@@ -18,6 +18,7 @@ export type CreateRefreshTokenInput = {
   familyId: string;
   issuedAt: Date;
   expiresAt: Date;
+  tokenHash: string;
   userAgentHash?: string | null;
   ipHash?: string | null;
 };
