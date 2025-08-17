@@ -1,9 +1,9 @@
-// src/infrastructure/auth/repositories/prisma-mfa-recovery.repository.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/infrastructure/prisma/prisma.service';
+import type { MfaRecoveryRepositoryPort } from 'src/application/auth/ports/mfa-recovery-repository.port';
 
 @Injectable()
-export class PrismaMfaRecoveryRepository {
+export class PrismaMfaRecoveryRepository implements MfaRecoveryRepositoryPort {
   constructor(private readonly prisma: PrismaService) {}
 
   async listHashes(userId: string): Promise<readonly string[]> {
