@@ -1,0 +1,11 @@
+export const USER_REPOSITORY = Symbol('UserRepositoryPort');
+export const REFRESH_TOKEN_REPOSITORY = Symbol('RefreshTokenRepositoryPort');
+export const MFA_RECOVERY_REPOSITORY = Symbol('MfaRecoveryRepositoryPort');
+export const TOKEN_SERVICE = Symbol('TokenServicePort');
+export const PASSWORD_HASHER = Symbol('PasswordHasherPort');
+export const MFA_CIPHER = Symbol('MfaCipherPort');
+export const TOTP = Symbol('TotpPort');
+export const RATE_LIMITER = Symbol('RateLimiterPort');
+export const TIME = Symbol('TimePort');
+export const UUID = Symbol('UuidPort');
+export const RANDOM = Symbol('RandomPort');
